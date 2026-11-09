@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Wexy Coach</title>
+<style>
+:root{--bg:#070b1f;--card:#101736;--card2:#18214a;--tx:#eef1ff;--mut:#8f9ac9;--ac:#4f6bff;--ac2:#9aa9ff;--ok:#37d6a0;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:light){:root:not([data-theme="dark"]){--bg:#eef1ff;--card:#fff;--card2:#e3e8ff;--tx:#10163a;--mut:#5a6499}}
+:root[data-theme="light"]{--bg:#eef1ff;--card:#fff;--card2:#e3e8ff;--tx:#10163a;--mut:#5a6499}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--tx);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;display:flex;flex-direction:column;max-width:520px;margin:0 auto}
+header{padding:16px 18px 6px}
+h1{margin:0;font-size:24px;letter-spacing:.5px}h1 span{color:var(--ac2);text-shadow:0 0 14px var(--ac)}
+.sub{color:var(--mut);font-size:14px}
+main{flex:1;overflow-y:auto;padding:8px 16px 16px}
+.card{background:var(--card);border-radius:18px;padding:16px;margin:10px 0;box-shadow:0 0 0 1px rgba(120,140,255,.12)}
+.ring{display:flex;align-items:center;gap:16px}
+.ring svg{flex:none}.big{font-size:28px;font-weight:700}
+.task{display:flex;align-items:center;gap:12px;padding:13px 4px;border-bottom:1px solid rgba(120,140,255,.12);cursor:pointer}
+.task:last-child{border:0}
+.box{width:26px;height:26px;border-radius:9px;border:2px solid var(--ac);flex:none;display:grid;place-items:center;font-size:16px;color:#fff}
+.task.d .box{background:var(--ok);border-color:var(--ok)}.task.d .t{text-decoration:line-through;color:var(--mut)}
+.tag{font-size:11px;color:var(--ac2);text-transform:uppercase;letter-spacing:1px}
+.chips{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0}
+.chip{padding:12px 16px;border-radius:14px;background:var(--card2);border:2px solid transparent;cursor:pointer;font-weight:600}
+.chip.on{border-color:var(--ac);box-shadow:0 0 14px rgba(79,107,255,.5)}
+button.pri{width:100%;padding:15px;border:0;border-radius:14px;background:linear-gradient(90deg,#3a55ff,#7a8bff);color:#fff;font-size:17px;font-weight:700;margin-top:10px}
+nav{display:flex;background:var(--card);padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px))}
+nav button{flex:1;background:none;border:0;color:var(--mut);padding:10px;font-size:13px;font-weight:600}
+nav button.on{color:var(--ac2)}nav b{display:block;font-size:20px}
+.msgs{display:flex;flex-direction:column;gap:8px}
+.m{max-width:85%;padding:11px 14px;border-radius:16px;white-space:pre-wrap}
+.m.u{align-self:flex-end;background:var(--ac);color:#fff}.m.a{align-self:flex-start;background:var(--card2)}
+.in{display:flex;gap:8px;padding:8px 12px}
+.in input{flex:1;padding:13px 16px;border-radius:22px;border:1px solid rgba(120,140,255,.3);background:var(--card);color:var(--tx);font-size:16px}
+.in button{border:0;border-radius:22px;background:var(--ac);color:#fff;padding:0 18px;font-weight:700}
+.bars{display:flex;gap:8px;align-items:flex-end;height:110px;margin-top:10px}
+.bars div{flex:1;background:var(--card2);border-radius:8px;position:relative}
+.bars i{position:absolute;bottom:0;left:0;right:0;border-radius:8px;background:linear-gradient(0deg,#3a55ff,#9aa9ff)}
+.bars small{position:absolute;top:100%;left:0;right:0;text-align:center;font-size:11px;color:var(--mut);margin-top:4px}
+.wk{margin-bottom:24px}
+a.lk{color:var(--ac2);font-size:13px;cursor:pointer;text-decoration:underline}
+</style></head><body>
+<header><h1>WEXY <span>COACH</span></h1><div class="sub" id="sub"></div></header>
+<main id="main"></main>
+<div class="in" id="chatin" style="display:none"><input id="ci" placeholder="Ask your coach…" autocomplete="off"><button id="cs">Send</button></div>
+<nav id="nav"></nav>
+<script>
+const BANK={
+skin:{n:"Skin",e:"✨",t:["Wash face morning & night","Apply moisturizer","Use SPF 30+ before heading out","Drink 2L of water","Change your pillowcase this week"]},
+fit:{n:"Fitness",e:"💪",t:["20 push-ups (any sets)","30-minute walk or run","Stretch for 10 minutes","Hit your protein target","Sleep by 11 pm"]},
+social:{n:"Social",e:"🗣️",t:["Start one conversation with someone new","Give a genuine compliment","Hold eye contact for a full chat","Message a friend you haven’t talked to","Say your opinion once in a group"]},
+mind:{n:"Mindset",e:"🧠",t:["Journal 5 minutes","10 minutes of silence or breathing","Write 3 things you’re proud of","No phone for the first 30 min of the day","Visualize your goal for 2 minutes"]},
+posture:{n:"Posture",e:"🧍",t:["Wall angel × 15","Chin tucks × 10","Check posture every hour","Shoulder-blade squeezes × 20","Stand tall for 5 minutes"]}};
+const SYS="You are Wexy Coach, an upbeat, honest confidence and habit coach. Give short, practical, specific advice (max 120 words). Be encouraging but never flatter falsely. No medical advice; suggest a professional for health issues.";
+let S={goals:[],log:{},chat:[],tab:"today"};
+try{S=Object.assign(S,JSON.parse(localStorage.getItem("wexy")||"{}"))}catch(e){}
+const save=()=>{try{localStorage.setItem("wexy",JSON.stringify(S))}catch(e){}};
+const $=id=>document.getElementById(id);
+const key=d=>{d=d||new Date();return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate()};
+function plan(dayOff){const d=new Date();d.setDate(d.getDate()-(dayOff||0));
+ const base=Math.floor(d/864e5),out=[];
+ S.goals.forEach(g=>{const b=BANK[g].t;for(let i=0;i<2;i++){const idx=(base+i*2+g.length)%b.length;out.push({id:g+idx,g,t:b[idx]})}});
+ return out}
+const doneToday=()=>S.log[key()]||[];
+function pct(off){const p=plan(off),d=new Date();d.setDate(d.getDate()-(off||0));const l=S.log[key(d)]||[];
+ return p.length?p.filter(x=>l.includes(x.id)).length/p.length:0}
+function streak(){let s=0;for(let i=pct(0)>=.5?0:1;i<400;i++){if(pct(i)>=.5)s++;else break}return s}
+function view(){
+ $("sub").textContent=S.goals.length?"Day streak: "+streak()+" 🔥":"Your personal confidence coach";
+ $("chatin").style.display=S.tab==="coach"&&S.goals.length?"flex":"none";
+ const m=$("main");
+ if(!S.goals.length){onboard(m);nav(false);return}
+ nav(true);
+ if(S.tab==="today")today(m);else if(S.tab==="coach")coach(m);else if(S.tab==="chal")chal(m);else prog(m)}
+function nav(on){$("nav").innerHTML=on?[["today","📋","Today"],["chal","🏋️","Challenge"],["coach","💬","Coach"],["prog","📈","Progress"]].map(([k,i,l])=>`<button class="${S.tab===k?"on":""}" data-t="${k}"><b>${i}</b>${l}</button>`).join(""):"";
+ $("nav").querySelectorAll("button").forEach(b=>b.onclick=()=>{stopCam();S.tab=b.dataset.t;save();view()})}
+function onboard(m){let sel=new Set();
+ m.innerHTML=`<div class="card"><div class="big">What do you want to level up?</div><div class="sub">Pick your focus areas. Your daily roadmap is built from these.</div><div class="chips">${Object.entries(BANK).map(([k,v])=>`<div class="chip" data-k="${k}">${v.e} ${v.n}</div>`).join("")}</div><button class="pri" id="go">Build my plan</button></div>`;
+ m.querySelectorAll(".chip").forEach(c=>c.onclick=()=>{const k=c.dataset.k;sel.has(k)?sel.delete(k):sel.add(k);c.classList.toggle("on")});
+ $("go").onclick=()=>{if(!sel.size)return;S.goals=[...sel];S.tab="today";save();view()}}
+function today(m){const p=plan(),dn=doneToday(),n=p.filter(x=>dn.includes(x.id)).length,r=p.length?n/p.length:0,C=2*Math.PI*34;
+ m.innerHTML=`<div class="card ring"><svg width="86" height="86" viewBox="0 0 86 86"><circle cx="43" cy="43" r="34" fill="none" stroke="var(--card2)" stroke-width="10"/><circle cx="43" cy="43" r="34" fill="none" stroke="var(--ac2)" stroke-width="10" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C*(1-r)}" transform="rotate(-90 43 43)"/></svg><div><div class="big">${n}/${p.length} done</div><div class="sub">${r>=1?"Locked in. Perfect day. 🔒":r>=.5?"Streak secured. Finish strong.":"Complete half to keep your streak."}</div></div></div>
+ <div class="card">${p.map(x=>`<div class="task ${dn.includes(x.id)?"d":""}" data-id="${x.id}"><div class="box">${dn.includes(x.id)?"✓":""}</div><div><div class="tag">${BANK[x.g].e} ${BANK[x.g].n}</div><div class="t">${x.t}</div></div></div>`).join("")}</div>
+ <a class="lk" id="edit">Change focus areas</a>`;
+ m.querySelectorAll(".task").forEach(t=>t.onclick=()=>{const l=S.log[key()]=doneToday().slice(),id=t.dataset.id,i=l.indexOf(id);i<0?l.push(id):l.splice(i,1);save();view()});
+ $("edit").onclick=()=>{S.goals=[];save();view()}}
+function prog(m){const days=[];for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);days.push([["S","M","T","W","T","F","S"][d.getDay()],pct(i)])}
+ let tot=0;Object.values(S.log).forEach(a=>tot+=a.length);
+ m.innerHTML=`<div class="card"><div class="big">${streak()} day streak</div><div class="sub">${tot} tasks completed overall</div></div><div class="card wk"><b>Last 7 days</b><div class="bars">${days.map(([l,v])=>`<div><i style="height:${Math.round(v*100)}%"></i><small>${l}</small></div>`).join("")}</div></div>`}
+function coach(m){
+ if(!S.chat.length)S.chat=[{role:"assistant",content:"Hey! I’m your coach. Tell me how today is going, ask for advice, or say what’s holding you back."}];
+ m.innerHTML=(S.key?"":`<div class="card"><div class="sub">Add your Anthropic API key to turn on the AI coach and form check. It stays on this phone.</div><input id="ky" placeholder="sk-ant-…" style="width:100%;padding:12px;border-radius:12px;margin-top:8px;border:1px solid var(--ac);background:var(--card2);color:var(--tx)"><button class="pri" id="ks">Save key</button></div>`)+`<div class="msgs">${S.chat.map(c=>`<div class="m ${c.role==="user"?"u":"a"}">${esc(c.content)}</div>`).join("")}</div>`;
+ const ks=$("ks");if(ks)ks.onclick=()=>{S.key=$("ky").value.trim();save();view()};
+ m.scrollTop=m.scrollHeight}
+const esc=s=>s.replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+let busy=false;
+async function send(){const i=$("ci"),t=i.value.trim();if(!t||busy)return;i.value="";busy=true;
+ S.chat.push({role:"user",content:t});S.chat.push({role:"assistant",content:"…"});view();
+ const ctx=SYS+"\nUser focus areas: "+S.goals.map(g=>BANK[g].n).join(", ")+". Today’s progress: "+Math.round(pct(0)*100)+"%. Streak: "+streak()+".\n";
+ const hist=S.chat.slice(1,-1).slice(-10).map(c=>({role:c.role,content:c.content}));
+ hist[0]={role:"user",content:ctx+"\nConversation:\n"+hist[0].content};
+ try{if(!S.key)throw 0;S.chat[S.chat.length-1].content=await ai(hist)}
+ catch(e){S.chat[S.chat.length-1].content="I can’t reach the AI right now. Meanwhile: do your smallest task on today’s list first. Momentum beats motivation."}
+ busy=false;save();view()}
+const P={on:false,reps:0,ph:"up",min:180,hip:180,fb:"",st:"",pl:null,raf:0,last:-1,shots:[]};
+function target(){S.pu=S.pu||{start:Date.now(),log:{}};return Math.min(100,10+2*Math.floor((Date.now()-S.pu.start)/864e5))}
+function stopCam(){P.on=false;cancelAnimationFrame(P.raf);const v=$("vid");if(v&&v.srcObject){v.srcObject.getTracks().forEach(t=>t.stop());v.srcObject=null}}
+function say(t){P.st=t;const e=$("ps");if(e)e.textContent=t}
+function setBtn(){const b=$("mb");if(b)b.textContent=P.on?"Finish set":"Start set"}
+const ang=(a,b,c)=>{const r=Math.atan2(c.y-b.y,c.x-b.x)-Math.atan2(a.y-b.y,a.x-b.x);let d=Math.abs(r*180/Math.PI);return d>180?360-d:d};
+function chal(m){const tg=target(),dn=S.pu.log[key()]||0;
+ m.innerHTML=`<div class="card"><div class="tag">Push-up challenge</div><div class="big">Today: ${tg} reps</div><div class="sub">Logged ${dn} · target grows +2 every day</div></div><div class="card"><div style="position:relative"><video id="vid" playsinline muted style="width:100%;border-radius:14px;background:#000;transform:scaleX(-1);display:none"></video><canvas id="ov" style="position:absolute;inset:0;width:100%;height:100%;transform:scaleX(-1)"></canvas></div><div class="ring" style="margin-top:8px"><div class="big" id="rc" style="font-size:44px">${P.reps}</div><div class="sub" id="ps">${esc(P.st||"Prop your phone on the floor, side-on to you, so your whole body is in view.")}</div></div><button class="pri" id="mb"></button><div style="display:flex;gap:8px"><button class="pri" id="mi" style="background:var(--card2)">− 1</button><button class="pri" id="pl" style="background:var(--card2)">+ 1</button></div></div><div class="card" style="display:${P.fb?"block":"none"}"><b>AI form check</b><div class="m a" style="margin-top:8px;max-width:100%">${esc(P.fb)}</div></div>`;
+ setBtn();$("mb").onclick=()=>P.on?finish():start();
+ $("mi").onclick=()=>{P.reps=Math.max(0,P.reps-1);$("rc").textContent=P.reps};
+ $("pl").onclick=()=>{P.reps++;$("rc").textContent=P.reps}}
+async function start(){
+ try{say("Loading AI model…");
+  if(!P.pl){const V=await import("./vendor/vision_bundle.js");const fs=await V.FilesetResolver.forVisionTasks("./vendor/wasm");
+   const mk=d=>V.PoseLandmarker.createFromOptions(fs,{baseOptions:{modelAssetPath:"./vendor/pose_landmarker_lite.task",delegate:d},runningMode:"VIDEO",numPoses:1});
+   try{P.pl=await mk("GPU")}catch(e){P.pl=await mk("CPU")}}
+  const st=await navigator.mediaDevices.getUserMedia({video:{facingMode:"user",width:640,height:480}});
+  const v=$("vid");v.srcObject=st;v.style.display="block";await v.play();
+  Object.assign(P,{on:true,reps:0,ph:"up",min:180,hip:180,shots:[],fb:"",last:-1});$("rc").textContent=0;
+  say("Get into plank position. Counting starts when I see you.");setBtn();loop()}
+ catch(e){say("Couldn’t start: "+(e.message||e));P.on=false;setBtn()}}
+function loop(){if(!P.on)return;const v=$("vid"),c=$("ov");
+ if(v&&v.videoWidth&&v.currentTime!==P.last){P.last=v.currentTime;
+  const r=P.pl.detectForVideo(v,performance.now());c.width=v.videoWidth;c.height=v.videoHeight;
+  const x=c.getContext("2d");x.clearRect(0,0,c.width,c.height);
+  const L=r.landmarks&&r.landmarks[0];if(L)track(L,x,c)}
+ P.raf=requestAnimationFrame(loop)}
+function snap(){const c=document.createElement("canvas");c.width=320;c.height=240;c.getContext("2d").drawImage($("vid"),0,0,320,240);
+ P.shots=[...P.shots.slice(-1),c.toDataURL("image/jpeg",.7).split(",")[1]]}
+function track(L,x,c){
+ const ids=(L[11].visibility+L[13].visibility+L[15].visibility)>(L[12].visibility+L[14].visibility+L[16].visibility)?[11,13,15,23,27]:[12,14,16,24,28];
+ const [s,e,w,h,a]=ids.map(i=>L[i]);
+ if(Math.min(s.visibility,e.visibility,w.visibility)<.5){say("I can’t see your arm. Move back so your upper body is in frame.");return}
+ const el=ang(s,e,w),hip=(h.visibility>.5&&a.visibility>.5)?ang(s,h,a):180;
+ const P2=p=>[p.x*c.width,p.y*c.height];
+ x.lineWidth=6;x.lineCap="round";x.strokeStyle="#7a8bff";x.beginPath();x.moveTo(...P2(s));x.lineTo(...P2(e));x.lineTo(...P2(w));x.stroke();
+ x.strokeStyle=hip>160?"#37d6a0":"#ff6b6b";x.beginPath();x.moveTo(...P2(s));x.lineTo(...P2(h));x.lineTo(...P2(a));x.stroke();
+ P.min=Math.min(P.min,el);P.hip=Math.min(P.hip,hip);
+ if(P.ph==="up"&&el<100){P.ph="down";snap()}
+ else if(P.ph==="down"&&el>155){P.ph="up";P.reps++;$("rc").textContent=P.reps;
+  say(P.hip<155?"Rep "+P.reps+": keep your hips in line":P.min>90?"Rep "+P.reps+": go a bit lower":"Rep "+P.reps+": clean ✔");P.min=180;P.hip=180}}
+async function finish(){const r=P.reps,sh=P.shots.slice();stopCam();
+ S.pu.log[key()]=(S.pu.log[key()]||0)+r;save();
+ P.st="Set done: "+r+" reps. "+(r>=target()?"Target smashed 🔥":"Today’s target is "+target()+".");
+ P.fb=sh.length&&S.key?"Checking your form…":"";chal($("main"));
+ if(sh.length&&S.key){try{P.fb=await ai([{role:"user",content:[...sh.map(d=>({type:"image",source:{type:"base64",media_type:"image/jpeg",data:d}})),{type:"text",text:"These are the lowest points of two push-up reps (low-res). Give a form score out of 10 and 3 short, specific tips on back and hips, elbow depth and head position. If no person is clearly visible, say so."}]}])}catch(e){P.fb="AI form check failed: "+e.message}
+  if(S.tab==="chal")chal($("main"))}}
+async function ai(msgs){const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"content-type":"application/json","x-api-key":S.key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-5-5",max_tokens:500,messages:msgs})});
+ const j=await r.json();if(!r.ok)throw new Error(j.error&&j.error.message||"request failed");return j.content.map(c=>c.text||"").join("")}
+$("cs").onclick=send;$("ci").onkeydown=e=>{if(e.key==="Enter")send()};
+view();
+</script></body></html>
